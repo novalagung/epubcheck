@@ -9,8 +9,9 @@ RUN mvn clean install -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
-COPY --from=builder /app .
-RUN echo '#!/bin/bash\n java -jar /app/target/epubcheck.jar "${@:1}"\n' > entrypoint.sh
+COPY --from=builder /app/target/epubcheck.jar /app/epubcheck.jar
+COPY --from=builder /app/target/lib /app/lib
+RUN printf '#!/bin/sh\njava -jar /app/epubcheck.jar "$@"\n' > /app/entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 ENV DATA_PATH=/data
