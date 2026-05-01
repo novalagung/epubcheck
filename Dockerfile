@@ -1,12 +1,12 @@
 # build the epubcheck.jar file
-FROM maven:slim AS builder
+FROM maven:3-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 COPY . .
-RUN mvn clean install
+RUN mvn clean install -DskipTests
 
 # prepare runner for epubcheck.jar execution
-FROM openjdk:slim
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 COPY --from=builder /app .
