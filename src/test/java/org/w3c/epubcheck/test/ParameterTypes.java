@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.hamcrest.Matcher;
-import org.w3c.epubcheck.test.TestConfiguration.CheckerMode;
+import org.w3c.epubcheck.test.EPUBCheckConfiguration.CheckerMode;
 
 import com.adobe.epubcheck.api.EPUBProfile;
 import com.adobe.epubcheck.messages.MessageId;
@@ -35,6 +35,11 @@ public class ParameterTypes
     }
 
   };
+  
+  @ParameterType("true|false")
+  public Boolean bool(String value) {
+    return Boolean.valueOf(value);
+  }
 
   @ParameterType("?i:(full publication|((Media Overlays|Navigation|Package|SVG Content|XHTML Content) Document))")
   public CheckerMode checkerMode(String mode)

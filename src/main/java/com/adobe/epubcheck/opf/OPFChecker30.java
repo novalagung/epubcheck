@@ -22,6 +22,7 @@
 
 package com.adobe.epubcheck.opf;
 
+import java.util.List;
 import java.util.Set;
 
 import org.w3c.epubcheck.core.references.Reference;
@@ -302,9 +303,8 @@ public class OPFChecker30 extends OPFChecker
         Optional<OPFItem> item = opfHandler.getItemByURL(resource.getDocumentURL());
         if (!item.isPresent())
         {
-          // FIXME 2022 check how to report the URL
           report.message(MessageId.OPF_081, EPUBLocation.of(context),
-              resource.getDocumentURL().path());
+              context.relativize(resource.getDocumentURL()));
         }
         else if ("application/vnd.epub.search-key-map+xml".equals(item.get().getMimeType()))
         {
@@ -317,9 +317,8 @@ public class OPFChecker30 extends OPFChecker
         }
         else if (!"application/xhtml+xml".equals(item.get().getMimeType()))
         {
-          // FIXME 2022 check how to report the URL
           report.message(MessageId.OPF_084, EPUBLocation.of(context),
-              resource.getDocumentURL().path());
+              context.relativize(resource.getDocumentURL()));
         }
       }
       if (!skmFound)
@@ -425,7 +424,7 @@ public class OPFChecker30 extends OPFChecker
   {
     MetadataSet metadata = ((OPFHandler30) opfHandler).getMetadata();
     // search total durations metadata expressions
-    Set<Metadata> totalDurationExpressions = metadata
+    List<Metadata> totalDurationExpressions = metadata
         .getPrimary(MediaOverlaysVocab.VOCAB.get(MediaOverlaysVocab.PROPERTIES.DURATION));
     if (!totalDurationExpressions.isEmpty())
     {
@@ -436,7 +435,7 @@ public class OPFChecker30 extends OPFChecker
             totalDurationExpressions.iterator().next().getValue());
         // sum all the individual durations (non-primary metadata expressions)
         SmilClock sumDuration = new SmilClock();
-        Set<Metadata> allDurations = metadata
+        List<Metadata> allDurations = metadata
             .getAny(MediaOverlaysVocab.VOCAB.get(MediaOverlaysVocab.PROPERTIES.DURATION));
         for (Metadata durationExpression : allDurations)
         {
@@ -469,7 +468,7 @@ public class OPFChecker30 extends OPFChecker
           report.message(MessageId.NAV_003, EPUBLocation.of(context));
         }
         // Search a "dc:source" metadata expression
-        Set<Metadata> dcSourceMetas = ((OPFHandler30) opfHandler).getMetadata()
+        List<Metadata> dcSourceMetas = ((OPFHandler30) opfHandler).getMetadata()
             .getPrimary(DCMESVocab.VOCAB.get(DCMESVocab.PROPERTIES.SOURCE));
         if (dcSourceMetas.isEmpty())
         {
@@ -594,7 +593,7 @@ public class OPFChecker30 extends OPFChecker
     return type.equals("font/otf") || type.equals("font/ttf") || type.equals("font/woff")
         || type.equals("font/woff2") || type.equals("application/font-sfnt")
         || type.equals("application/font-woff") || type.equals("application/vnd.ms-opentype")
-        || type.equals("image/svg+xml");
+        || type.equals("application/x-font-ttf");
   }
 
   public static boolean isBlessedScriptType(String type)
@@ -625,6 +624,8 @@ public class OPFChecker30 extends OPFChecker
       return "font/otf";
     case "application/font-woff":
       return "font/woff";
+    case "application/x-font-ttf":
+      return "font/ttf";
     case "text/javascript":
     case "application/ecmascript":
       return "application/javascript";

@@ -39,13 +39,17 @@ import static org.idpf.epubcheck.util.css.CssToken.Matchers.MATCH_STAR;
 import static org.idpf.epubcheck.util.css.CssToken.Matchers.MATCH_STAR_PIPE;
 import static org.idpf.epubcheck.util.css.CssTokenList.Filters.FILTER_NONE;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.idpf.epubcheck.util.css.CssExceptions.CssErrorCode;
 import org.idpf.epubcheck.util.css.CssExceptions.CssException;
 import org.idpf.epubcheck.util.css.CssExceptions.CssGrammarException;
+import org.idpf.epubcheck.util.css.CssGrammar.CssComposedConstruct;
+import org.idpf.epubcheck.util.css.CssGrammar.CssConstruct;
 import org.idpf.epubcheck.util.css.CssParser.ContextRestrictions;
 import org.idpf.epubcheck.util.css.CssTokenList.CssTokenIterator;
 
@@ -66,6 +70,23 @@ import com.google.common.collect.Lists;
 public class CssGrammar
 {
 
+  /**
+   * Utility methodd to flatten a nested construct in a list
+   * of its atomic components
+   */
+  public static List<CssConstruct> flatten(CssConstruct construct)
+  {
+    if (construct instanceof CssComposedConstruct)
+    {
+      return ((CssComposedConstruct) construct).getComponents().stream()
+          .flatMap(c -> flatten(c).stream()).collect(Collectors.toList());
+    }
+    else
+    {
+      return Arrays.asList(construct);
+    }
+  }
+  
   /**
    * Abstract base for all CssConstructs.
    */
@@ -407,13 +428,14 @@ public class CssGrammar
       LENGTH,
       EMS,
       EXS,
+      REMS,
+      CHS,
       ANGLE,
       TIME,
       FREQ,
       RESOLUTION,
       NUMBER,
       INTEGER,
-      REMS
     }
 
     @Override
@@ -897,9 +919,11 @@ public class CssGrammar
             selector.components.add(comb);
             start = iter.next();
           }
-          else if (iter.list.get(idx - 1).type == CssToken.Type.S)
+          else if (iter.list.get(idx - 1).type == CssToken.Type.S
+                  || iter.list.get(idx - 1).type == CssToken.Type.FUNCTION)
           {
             selector.components.add(new CssSelectorCombinator(' ', start.location));
+            relative = false;
           }
           else
           {
@@ -1117,7 +1141,7 @@ public class CssGrammar
 
       String name = start.getChars().substring(0, start.getChars().length() - 1);
 
-      CssFunction negation = new CssFunction(name, start.location);
+      CssFunction function = new CssFunction(name, start.location);
 
       CssToken tk = iter.next();
       List<CssSelector> selectors = createSelectorList(tk, iter, err, forgiving, relative,
@@ -1130,10 +1154,10 @@ public class CssGrammar
       {
         for (CssSelector selector : selectors)
         {
-          negation.components.add(selector);
+          function.components.add(selector);
         }
       }
-      return negation;
+      return function;
     }
 
     CssAttributeSelector createAttributeSelector(final CssToken start,
@@ -1471,6 +1495,7 @@ public class CssGrammar
         .put(CssToken.Type.QNTY_REMS, BUILDER_QNTY)
         .put(CssToken.Type.QNTY_EMS, BUILDER_QNTY)
         .put(CssToken.Type.QNTY_EXS, BUILDER_QNTY)
+        .put(CssToken.Type.QNTY_CHS, BUILDER_QNTY)
         .put(CssToken.Type.QNTY_FREQ, BUILDER_QNTY)
         .put(CssToken.Type.QNTY_LENGTH, BUILDER_QNTY)
         .put(CssToken.Type.QNTY_PERCENTAGE, BUILDER_QNTY)
@@ -1502,6 +1527,7 @@ public class CssGrammar
         .put(CssToken.Type.QNTY_REMS, CssQuantity.Unit.REMS)
         .put(CssToken.Type.QNTY_EMS, CssQuantity.Unit.EMS)
         .put(CssToken.Type.QNTY_EXS, CssQuantity.Unit.EXS)
+        .put(CssToken.Type.QNTY_CHS, CssQuantity.Unit.CHS)
         .put(CssToken.Type.QNTY_FREQ, CssQuantity.Unit.FREQ)
         .put(CssToken.Type.QNTY_LENGTH, CssQuantity.Unit.LENGTH)
         .put(CssToken.Type.QNTY_PERCENTAGE, CssQuantity.Unit.PERCENTAGE)

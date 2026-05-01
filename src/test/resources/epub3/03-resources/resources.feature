@@ -12,19 +12,20 @@
 
   ## 3.2 Core Media Types
   
-
-  ####  Audio core media types
-
+  @spec @xref:sec-core-media-types
   Scenario: items with Core Media Types do not require fallbacks
       The test document contains one item of each supported core media types
     When checking file 'resources-core-media-types-valid.opf'
     Then no errors or warnings are reported
 
+  ####  Audio core media types
+
+
   Scenario: items with Core Media Types that are not preferred types are reported as usage
       The test document contains one item of each non-preferred core media types
     When the reporting level is set to USAGE
     And checking EPUB 'resources-core-media-types-not-preferred-valid.opf'
-    Then Usage OPF-090 is reported 6 times
+    Then Usage OPF-090 is reported 7 times
     And no errors or warnings are reported   
     
 
@@ -81,6 +82,13 @@
 
 
   ####  Font core media types
+
+  Scenario: Verify TrueType fonts core media types
+    Given the reporting level is set to USAGE
+    When checking EPUB 'resources-cmt-font-truetype-valid'
+    Then info CSS-007 is reported 0 times
+    And usage OPF-090 is reported 2 times
+    But no errors or warnings are reported
 
   Scenario: Verify Open Type fonts are allowed
     When checking EPUB 'resources-cmt-font-opentype-valid'
@@ -490,6 +498,10 @@
     Then warning RSC-031 is reported 3 times
     And no other errors or warnings are reported
 
+  Scenario: Allow `mailto` URLs, do not process them as resources
+    When checking document 'mailto-url-valid'
+    Then no errors or warnings are reported
+
   ## 3.7 Data URLs
 
   @spec @xref:sec-data-urls
@@ -548,6 +560,12 @@
     When checking EPUB 'data-url-in-html-img-foreign-no-fallback-error'
     Then error RSC-032 is reported
     And no other errors or warnings are reported
+
+  @spec @xref:sec-data-urls
+  Scenario: Verify a data URL having unesapced query-like component
+    See https://github.com/w3c/epubcheck/issues/1536
+    When checking EPUB 'data-url-with-unescaped-query-valid'
+    Then no other errors or warnings are reported
 
   ## 3.8 File URLs
 

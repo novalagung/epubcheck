@@ -20,6 +20,7 @@ import org.w3c.epubcheck.core.references.Resource;
 import org.w3c.epubcheck.util.microsyntax.ViewportMeta;
 import org.w3c.epubcheck.util.microsyntax.ViewportMeta.ParseError;
 import org.w3c.epubcheck.util.url.URLUtils;
+import org.xml.sax.SAXException;
 
 import com.adobe.epubcheck.api.EPUBLocation;
 import com.adobe.epubcheck.api.EPUBProfile;
@@ -43,12 +44,12 @@ import com.adobe.epubcheck.vocab.MagazineNavigationVocab;
 import com.adobe.epubcheck.vocab.PackageVocabs;
 import com.adobe.epubcheck.vocab.PackageVocabs.ITEM_PROPERTIES;
 import com.adobe.epubcheck.vocab.Property;
-import com.adobe.epubcheck.vocab.StagingEdupubVocab;
 import com.adobe.epubcheck.vocab.StructureVocab;
 import com.adobe.epubcheck.vocab.StructureVocab.EPUB_TYPES;
 import com.adobe.epubcheck.vocab.UncheckedVocab;
 import com.adobe.epubcheck.vocab.Vocab;
 import com.adobe.epubcheck.vocab.VocabUtil;
+import com.adobe.epubcheck.xml.Namespaces;
 import com.adobe.epubcheck.xml.model.XMLAttribute;
 import com.adobe.epubcheck.xml.model.XMLElement;
 import com.google.common.base.Joiner;
@@ -65,7 +66,7 @@ public class OPSHandler30 extends OPSHandler
   private static final String HAS_PALPABLE_CONTENT = "IS_PALPABLE";
 
   private static Map<String, Vocab> RESERVED_VOCABS = ImmutableMap.<String, Vocab> of("",
-      AggregateVocab.of(StructureVocab.VOCAB, StagingEdupubVocab.VOCAB, DataNavVocab.VOCAB,
+      AggregateVocab.of(StructureVocab.VOCAB, DataNavVocab.VOCAB,
           DictVocab.VOCAB, IndexVocab.VOCAB, ComicsVocab.VOCAB, StructureVocab.UNCHECKED_VOCAB),
       MagazineNavigationVocab.PREFIX, MagazineNavigationVocab.VOCAB, ForeignVocabs.PRISM_PREFIX,
       ForeignVocabs.PRISM_VOCAB);
@@ -334,109 +335,127 @@ public class OPSHandler30 extends OPSHandler
     processSectioning();
 
     String name = e.getName();
-    if (name.equals("html"))
+    if (EpubConstants.HtmlNamespaceUri.equals(e.getNamespace()))
     {
-      vocabs = VocabUtil.parsePrefixDeclaration(
-          e.getAttributeNS(EpubConstants.EpubTypeNamespaceUri, "prefix"), RESERVED_VOCABS,
-          KNOWN_VOCAB_URIS, DEFAULT_VOCAB_URIS, report, location());
-    }
-    else if (EpubConstants.HtmlNamespaceUri.equals(e.getNamespace()) && name.equals("meta"))
-    {
-      processMeta();
-    }
-    else if (name.equals("form"))
-    {
-      requiredProperties.add(ITEM_PROPERTIES.SCRIPTED);
-    }
-    else if (name.equals("link"))
-    {
-      processLink();
-    }
-    else if (name.equals("math"))
-    {
-      requiredProperties.add(ITEM_PROPERTIES.MATHML);
-      inMathML = true;
-      hasAltorAnnotation = (null != e.getAttribute("alttext"));
-      String altimg = e.getAttribute("altimg");
-      if (altimg != null)
+      if (name.equals("html"))
       {
-        super.checkImage(null, "altimg");
+        vocabs = VocabUtil.parsePrefixDeclaration(
+            e.getAttributeNS(EpubConstants.EpubTypeNamespaceUri, "prefix"), RESERVED_VOCABS,
+            KNOWN_VOCAB_URIS, DEFAULT_VOCAB_URIS, report, location());
+      }
+      else if (name.equals("meta"))
+      {
+        processMeta();
+      }
+      else if (name.equals("form"))
+      {
+        requiredProperties.add(ITEM_PROPERTIES.SCRIPTED);
+      }
+      else if (name.equals("link"))
+      {
+        processLink();
       }
 
-    }
-    else if (name.equals("svg"))
-    {
-      processSVG();
-    }
-    else if (EpubConstants.EpubTypeNamespaceUri.equals(e.getNamespace()) && name.equals("switch"))
-    {
-      requiredProperties.add(ITEM_PROPERTIES.SWITCH);
-    }
-    else if (name.equals("audio"))
-    {
-      startMediaElement();
-    }
-    else if (name.equals("video"))
-    {
-      processVideo();
-      startMediaElement();
-    }
-    else if (name.equals("figure"))
-    {
-      processFigure();
-    }
-    else if (name.equals("table"))
-    {
-      processTable();
-    }
-    else if (name.equals("track"))
-    {
-      startTrack();
-    }
-    else if (name.equals("a"))
-    {
-      anchorNeedsText = true;
-      processAnchor(e);
-    }
-    else if (name.equals("annotation-xml"))
-    {
-      hasAltorAnnotation = true;
-    }
-    else if (name.equals("input"))
-    {
-      startInput();
-    }
-    else if (name.equals("picture"))
-    {
-      inPicture = true;
-    }
-    else if (name.equals("source"))
-    {
-      if ("picture".equals(e.getParent().getName()))
+      else if (name.equals("audio"))
       {
-        checkImage(null, null);
+        startMediaElement();
       }
-      else // audio or video source
+      else if (name.equals("video"))
       {
-        startMediaSource();
+        processVideo();
+        startMediaElement();
+      }
+      else if (name.equals("figure"))
+      {
+        processFigure();
+      }
+      else if (name.equals("table"))
+      {
+        processTable();
+      }
+      else if (name.equals("track"))
+      {
+        startTrack();
+      }
+      else if (name.equals("a"))
+      {
+        anchorNeedsText = true;
+        processAnchor(e);
+      }
+      else if (name.equals("input"))
+      {
+        startInput();
+      }
+      else if (name.equals("picture"))
+      {
+        inPicture = true;
+      }
+      else if (name.equals("source"))
+      {
+        if ("picture".equals(e.getParent().getName()))
+        {
+          checkImage(null, null);
+        }
+        else // audio or video source
+        {
+          startMediaSource();
+        }
+      }
+      else if (name.equals("embed"))
+      {
+        startEmbed();
+      }
+      else if (name.equals("blockquote") || name.equals("q") || name.equals("ins")
+          || name.equals("del"))
+      {
+        checkCiteAttribute();
       }
     }
-    else if ("http://www.w3.org/2000/svg".equals(e.getNamespace()) && name.equals("title"))
+    else if ("http://www.w3.org/1998/Math/MathML".equals(e.getNamespace()))
     {
-      hasLabel = true;
+      if (name.equals("math"))
+      {
+        requiredProperties.add(ITEM_PROPERTIES.MATHML);
+        inMathML = true;
+        hasAltorAnnotation = (null != e.getAttribute("alttext"));
+        String altimg = e.getAttribute("altimg");
+        if (altimg != null)
+        {
+          super.checkImage(null, "altimg");
+        }
+
+      }
+      else if (name.equals("annotation-xml"))
+      {
+        hasAltorAnnotation = true;
+      }
     }
-    else if ("http://www.w3.org/2000/svg".equals(e.getNamespace()) && name.equals("text"))
+    else if ("http://www.w3.org/2000/svg".equals(e.getNamespace()))
     {
-      hasLabel = true;
+      if (name.equals("svg"))
+      {
+        processSVG();
+      }
+      else if (name.equals("a"))
+      {
+        anchorNeedsText = true;
+        processAnchor(e);
+      }
+      else if (name.equals("title"))
+      {
+        hasLabel = true;
+      }
+      else if (name.equals("text"))
+      {
+        hasLabel = true;
+      }
     }
-    else if (name.equals("embed"))
+    else if (EpubConstants.EpubTypeNamespaceUri.equals(e.getNamespace()))
     {
-      startEmbed();
-    }
-    else if (name.equals("blockquote") || name.equals("q") || name.equals("ins")
-        || name.equals("del"))
-    {
-      checkCiteAttribute();
+      if (name.equals("switch"))
+      {
+        requiredProperties.add(ITEM_PROPERTIES.SWITCH);
+      }
     }
 
     processInlineScripts();
@@ -595,10 +614,12 @@ public class OPSHandler30 extends OPSHandler
   protected void startMediaSource()
   {
     XMLElement elem = currentElement();
-    assert "source".equals(elem.getName())
-        && ("audio".equals(elem.getParent().getName())
-            || "video".equals(elem.getParent().getName()))
-        && elem.getParent().getAttribute("src") == null;
+    assert "source".equals(elem.getName());
+    if (!("audio".equals(elem.getParent().getName())
+        || "video".equals(elem.getParent().getName())))
+    {
+      return; // schema error was reported
+    }
 
     // check the `src` attribute
     URL url = checkResourceURL(elem.getAttribute("src"));
@@ -974,6 +995,14 @@ public class OPSHandler30 extends OPSHandler
       case "picture":
       case "video":
         return true;
+      case "html":
+      case "head":
+      case "script":
+      case "link":
+      case "meta":
+      case "title":
+      case "style":
+        return false;
       // Special cases
       // case "input":
       // return !"hidden".equals(elem.getAttribute("type"));
@@ -1083,6 +1112,16 @@ public class OPSHandler30 extends OPSHandler
       {
         report.message(MessageId.CSS_015, location());
       }
+    }
+  }
+
+  @Override
+  public void startPrefixMapping(String prefix, String uri)
+    throws SAXException
+  {
+    super.startPrefixMapping(prefix, uri);
+    if ("epub".equals(prefix) && !(Namespaces.OPS.equals(uri))) {
+      report.message(MessageId.HTM_010, location(), uri);
     }
   }
 

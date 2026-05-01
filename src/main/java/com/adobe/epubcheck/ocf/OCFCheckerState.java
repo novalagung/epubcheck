@@ -41,6 +41,8 @@ class OCFCheckerState
   private final ImmutableList.Builder<URL> packageDocuments = ImmutableList.builder();
   private URL mappingDocument;
 
+  private OCFResources resources = null;
+
   private final Map<URL, EPUBLocation> obfuscated = new HashMap<>();
   private final Map<URL, Set<PublicationType>> publicationTypes = new LinkedHashMap<>();
   private final Map<URL, String> publicationIDs = new LinkedHashMap<>();
@@ -82,6 +84,16 @@ class OCFCheckerState
   {
     containerBuilder.addResource(resource);
     containerNeedsRebuild = true;
+  }
+
+  public OCFResources getResources()
+  {
+    return resources;
+  }
+
+  public void setResources(OCFResources resources)
+  {
+    this.resources = resources;
   }
 
   public void addRootfile(String mediaType, URL resource)
@@ -230,6 +242,12 @@ class OCFCheckerState
   public boolean isDeclared(URL resource)
   {
     return declaredResources.contains(resource);
+  }
+
+  public void setPackaged(boolean isPackaged)
+  {
+    containerBuilder.setPackaged(isPackaged);
+    containerNeedsRebuild = true;
   }
 
 }

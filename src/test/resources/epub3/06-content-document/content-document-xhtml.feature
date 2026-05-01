@@ -141,14 +141,6 @@ Feature: EPUB 3 — Content Documents — XHTML
     Then error RSC-005 is reported
     And the message contains 'attribute "aria-describedat" not allowed here'
     And no other errors or warnings are reported
-    
-  Scenario: Verify the DPUB-ARIA roles allowed on `a`
-    When checking document 'aria-roles-img-valid.xhtml'
-    Then no errors or warnings are reported
-
-  Scenario: Verify the DPUB-ARIA roles allowed on `aside`
-    When checking document 'aria-roles-img-valid.xhtml'
-    Then no errors or warnings are reported
 
   Scenario: Verify the DPUB-ARIA roles allowed on `footer`
     When checking document 'aria-roles-footer-valid.xhtml'
@@ -162,17 +154,18 @@ Feature: EPUB 3 — Content Documents — XHTML
     When checking document 'aria-roles-header-valid.xhtml'
     Then no errors or warnings are reported
 
-  Scenario: Verify the DPUB-ARIA roles allowed on `hr`
-    When checking document 'aria-roles-header-valid.xhtml'
-    Then no errors or warnings are reported
-
   Scenario: Verify the DPUB-ARIA roles allowed on `img`
     When checking document 'aria-roles-img-valid.xhtml'
     Then no errors or warnings are reported
 
-  Scenario: Verify the DPUB-ARIA roles allowed on `li`
-    When checking document 'aria-roles-li-valid.xhtml'
-    Then no errors or warnings are reported
+  Scenario: Report deprecated DPUB-ARIA roles on `li`
+    When checking document 'aria-roles-li-deprecated-warning.xhtml'
+    Then following warnings are reported:
+      | RSC-017 | "doc-endnote" role is deprecated |
+      | RSC-017 | "doc-endnote" role is deprecated |
+      | RSC-017 | "doc-biblioentry" role is deprecated |
+      | RSC-017 | "doc-biblioentry" role is deprecated |
+    Then no other errors or warnings are reported
 
   Scenario: Verify the DPUB-ARIA roles allowed on `nav`
     When checking document 'aria-roles-nav-valid.xhtml'
@@ -260,6 +253,11 @@ Feature: EPUB 3 — Content Documents — XHTML
 
   Scenario: Report a hyperlink to a missing identifier
     When checking EPUB 'content-xhtml-link-to-missing-id-error'
+    Then error RSC-012 is reported
+    And no errors or warnings are reported
+
+  Scenario: Report a hyperlink to a missing identifier in the Nav Doc
+    When checking EPUB 'content-xhtml-link-to-missing-id-in-nav-doc-error'
     Then error RSC-012 is reported
     And no errors or warnings are reported
 
@@ -551,6 +549,12 @@ Feature: EPUB 3 — Content Documents — XHTML
   
   #//TODO verify script core media types
   
+  #### source
+  
+  Scenario: Verify non-HTML `source` elements are skipped
+    See https://github.com/w3c/epubcheck/issues/1514
+    When checking EPUB 'dc-source-valid'
+    Then no errors or warnings are reported
 
   ####  Style
 
@@ -665,7 +669,9 @@ Feature: EPUB 3 — Content Documents — XHTML
 
   @spec @xref:sec-xhtml-structural-semantics
   Scenario: Verify `epub:type` attribute on allowed content
+    Given the reporting level set to usage
     When checking document 'epubtype-valid.xhtml'
+    Then usage OPF-088 is reported 0 times
     Then no errors or warnings are reported
 
   @spec @xref:sec-xhtml-structural-semantics
@@ -678,7 +684,6 @@ Feature: EPUB 3 — Content Documents — XHTML
     When checking document 'epubtype-reserved-vocab-valid.xhtml'
     Then no errors or warnings are reported
 
-  @spec @xref:sec-prefix-attr
   Scenario: Verify `epub:type` attribute with author-declared vocabulary
     When checking document 'epubtype-declared-vocab-valid.xhtml'
     Then no errors or warnings are reported
@@ -692,7 +697,7 @@ Feature: EPUB 3 — Content Documents — XHTML
   Scenario: Verify `epub:type` attribute with deprecated semantic
     Given the reporting level set to usage
     When checking document 'epubtype-deprecated-usage.xhtml'
-    Then usage OPF-086b is reported 10 times
+    Then usage OPF-086b is reported 13 times
     And no other errors or warnings are reported
 
   Scenario: Verify `epub:type` attribute that does not follow usage suggestions
@@ -700,13 +705,6 @@ Feature: EPUB 3 — Content Documents — XHTML
     When checking document 'epubtype-misuse-usage.xhtml'
     Then usage OPF-087 is reported 7 times
     And no other errors or warnings are reported
-
-  @spec @xref:sec-prefix-attr
-  Scenario: Report `epub:type` attribute with a semantic from an undeclared vocabulary
-    When checking document 'epubtype-prefix-undeclared-error.xhtml'
-    Then error OPF-028 is reported
-    And no other errors or warnings are reported
-
 
   #### 6.1.3.2 RDFa
 
@@ -817,6 +815,13 @@ Feature: EPUB 3 — Content Documents — XHTML
     When checking document 'ssml-empty-ph-warning.xhtml'
     Then warning HTM-007 is reported 2 times
     And no other errors or warnings are reported
+
+  #### 6.1.3.X Internationalization tag set (ITS)
+
+  @spec @xref:sec-xhtml-its
+  Scenario: Verify ITS attributes are allowed
+    When checking document 'attrs-its-valid.xhtml'
+    Then no errors or warnings are reported
 
   ###  6.1.4 HTML deviations and constraints
 
@@ -1014,3 +1019,11 @@ Feature: EPUB 3 — Content Documents — XHTML
     And the message contains 'rp'
     And no other errors or warnings are reported
 
+  #### Other
+
+  Scenario: Report an unrecognized `epub` namespace (informative)
+    Given the reporting level is set to usage
+    When checking document 'ns-epub-unknown-info.xhtml'
+    Then usage HTM-010 is reported
+    And the message contains 'Namespace "http://http://www.idpf.org/2007/ops" is unusual'
+    And no errors or warnings are reported

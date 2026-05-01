@@ -202,8 +202,8 @@ common.attrs.present =
 
 common.attrs.other =
 	(	common.attrs.autofocus?
-	&	common.attrs.inputmode?
 	&	common.attrs.nonce?
+	&	common.attrs.inert?
 	)
 
 	common.attrs.autofocus = 
@@ -211,14 +211,24 @@ common.attrs.other =
 			"autofocus" | ""
 		}
 
-	common.attrs.inputmode =
-		attribute inputmode {
-			string
+	common.attrs.blocking = 
+		attribute blocking {
+			list { "render" }
+		}
+
+	common.attrs.fetchpriority =
+		attribute fetchpriority {
+			"high" | "low" | "auto"
 		}
 
 	common.attrs.nonce =
 		attribute nonce {
 			string
+		}
+
+	common.attrs.inert = 
+		attribute inert {
+			string "inert" | string ""
 		}
 
 # #####################################################################
@@ -550,6 +560,7 @@ common.attrs.aria.implicit.radio = ( notAllowed )
 common.attrs.aria.implicit.region = ( notAllowed )
 common.attrs.aria.implicit.row |= ( notAllowed )
 common.attrs.aria.implicit.rowgroup |= ( notAllowed )
+common.attrs.aria.implicit.search = ( notAllowed )
 common.attrs.aria.implicit.searchbox |= ( notAllowed )
 common.attrs.aria.implicit.section = ( notAllowed )
 common.attrs.aria.implicit.select = ( notAllowed )

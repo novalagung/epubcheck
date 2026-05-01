@@ -43,6 +43,7 @@ import com.adobe.epubcheck.opf.OPFChecker;
 import com.adobe.epubcheck.opf.OPFChecker30;
 import com.adobe.epubcheck.opf.ValidationContext;
 import com.adobe.epubcheck.util.EPUBVersion;
+import com.adobe.epubcheck.util.FeatureEnum;
 import com.google.common.base.Preconditions;
 
 import io.mola.galimatias.URL;
@@ -108,6 +109,9 @@ public class ResourceReferencesChecker
 
   private void checkReference(Reference reference)
   {
+    // Report the reference
+    report.info(reference.location.getPath(), FeatureEnum.RESOURCE, container.relativize(reference.url));
+    
     // Retrieve the target resource
     Optional<Resource> targetResource = resourceRegistry.getResource(reference.targetResource);
     try
@@ -456,25 +460,27 @@ public class ResourceReferencesChecker
         // check that the fragment is in document order
         URLFragment fragment = URLFragment.parse(ref.url, res.getMimeType());
         int targetAnchorPosition = resourceRegistry.getIDPosition(fragment.getId(), res);
-        if (targetAnchorPosition < lastAnchorPosition)
-        {
-          String orderContext = LocalizedMessages.getInstance(locale).getSuggestion(
-              MessageId.NAV_011,
-              "document");
-          if (ref.type == Reference.Type.OVERLAY_TEXT_LINK)
+        if (targetAnchorPosition > -1) {
+          if (targetAnchorPosition < lastAnchorPosition)
           {
-            report.message(MessageId.MED_015, ref.location, container.relativize(ref.url),
-                orderContext);
+            String orderContext = LocalizedMessages.getInstance(locale).getSuggestion(
+                MessageId.NAV_011,
+                "document");
+            if (ref.type == Reference.Type.OVERLAY_TEXT_LINK)
+            {
+              report.message(MessageId.MED_015, ref.location, container.relativize(ref.url),
+                  orderContext);
+            }
+            else
+            {
+              report.message(MessageId.NAV_011, ref.location,
+                  (ref.type == Reference.Type.NAV_TOC_LINK) ? "toc" : "page-list",
+                      container.relativize(ref.url),
+                      orderContext);
+            }
           }
-          else
-          {
-            report.message(MessageId.NAV_011, ref.location,
-                (ref.type == Reference.Type.NAV_TOC_LINK) ? "toc" : "page-list",
-                container.relativize(ref.url),
-                orderContext);
-          }
+          lastAnchorPosition = targetAnchorPosition;
         }
-        lastAnchorPosition = targetAnchorPosition;
       }
     }
 

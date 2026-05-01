@@ -14,6 +14,7 @@
 			|	common.attrs.aria.role.application
 			|	common.attrs.aria.role.dialog
 			|	common.attrs.aria.role.feed
+			|	common.attrs.aria.role.group
 			|	common.attrs.aria.role.log
 			|	common.attrs.aria.role.marquee
 			|	common.attrs.aria.role.presentation
@@ -76,6 +77,8 @@
 			|	common.attrs.aria.role.doc-toc
 			|	common.attrs.aria.role.menu
 			|	common.attrs.aria.role.menubar
+			|	common.attrs.aria.role.none
+			|	common.attrs.aria.role.presentation
 			|	common.attrs.aria.role.tablist
 			)?
 		)
@@ -122,6 +125,7 @@
 			|	common.attrs.aria.role.doc-dedication
 			|	common.attrs.aria.role.doc-example
 			|	common.attrs.aria.role.doc-footnote
+			|	common.attrs.aria.role.doc-glossary
 			|	common.attrs.aria.role.doc-pullquote
 			|	common.attrs.aria.role.doc-tip
 			)?
@@ -182,3 +186,24 @@
 		( common.inner.flow )
 
 	common.elem.flow |= main.elem
+
+## Search: <search>
+
+	search.elem =
+		element search { search.inner & search.attrs }
+	search.attrs =
+		(	common.attrs
+		&	(	common.attrs.aria.implicit.search
+			|	common.attrs.aria.landmark.search
+			|	common.attrs.aria.landmark.form
+			|	common.attrs.aria.role.group
+			|	common.attrs.aria.role.none
+			|	common.attrs.aria.role.presentation
+			|	common.attrs.aria.role.region
+			|	common.attrs.aria.role.search
+			)?
+		)
+	search.inner =
+		( common.inner.flow )
+
+	common.elem.flow |= search.elem

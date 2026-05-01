@@ -92,6 +92,8 @@ public class EpubChecker
   File listChecksOut;
   File customMessageFile;
   boolean listChecks = false;
+  boolean displayHelp = false;
+  boolean displayVersion = false;
   boolean useCustomMessageFile = false;
   boolean failOnWarnings = false;
   private Messages messages = Messages.getInstance();
@@ -131,6 +133,10 @@ public class EpubChecker
     {
       if (processArguments(args))
       {
+        if (displayHelp || (displayVersion && path == null))
+        {
+          return 0;
+        }
         report = createReport();
         report.initialize();
         if (listChecks)
@@ -154,7 +160,9 @@ public class EpubChecker
       returnValue = 1;
     } finally
     {
-      printEpubCheckCompleted(report);
+      if (report != null) {
+        printEpubCheckCompleted(report);
+      }
     }
     return returnValue;  
   }
@@ -245,7 +253,9 @@ public class EpubChecker
       int validationResult = ((EpubCheck) checker).doValidate();
       if (validationResult == 0)
       {
-        outWriter.println(messages.get("no_errors__or_warnings"));
+        if (!((jsonOutput||xmlOutput||xmpOutput) && fileOut==null)) {
+          outWriter.println(messages.get("no_errors__or_warnings"));
+        }
         return 0;
       }
       else if (validationResult == 1)
@@ -261,7 +271,9 @@ public class EpubChecker
       checker.check();
       if (report.getWarningCount() == 0 && report.getFatalErrorCount() == 0 && report.getErrorCount() == 0)
       {
-        outWriter.println(messages.get("no_errors__or_warnings"));
+        if (!((jsonOutput||xmlOutput||xmpOutput) && fileOut==null)) {
+          outWriter.println(messages.get("no_errors__or_warnings"));
+        }
         return 0;
       }
       else if (report.getWarningCount() > 0 && report.getFatalErrorCount() == 0 && report.getErrorCount() == 0)
@@ -487,7 +499,7 @@ public class EpubChecker
     setCustomMessageFileFromEnvironment();
 
     Pattern argPattern = Pattern.compile("--?(.*)");
-
+    
     for (int i = 0; i < args.length; i++)
     {
       Matcher argMatch = argPattern.matcher(args[i]);
@@ -658,8 +670,7 @@ public class EpubChecker
               outWriter.setQuiet(true);
             break;
           case "failonwarnings":
-              String fw = args[i].substring("--failonwarnings".length());
-              failOnWarnings = (fw.compareTo("-") != 0);
+              failOnWarnings = true;
             break;
           case "r":
           case "redir":
@@ -738,9 +749,11 @@ public class EpubChecker
           case "?":
           case "help":
               displayHelp(); // display help message
-            break;
+              displayHelp = true;
+              break;
           case "version":
             displayVersion();
+            displayVersion = true;
             break;
           default:
               System.err.println(String.format(messages.get("unrecognized_argument"), args[i]));
@@ -789,7 +802,7 @@ public class EpubChecker
 
     if (path == null)
     {
-      if (listChecks)
+      if (listChecks || displayHelp || displayVersion)
       {
         return true;
       }

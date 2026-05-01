@@ -23,6 +23,7 @@ public final class OCFContainer implements GenericResourceProvider
   {
 
     private final URL rootURL;
+    private boolean isPackaged;
     private Map<URL, OCFResource> resources = new LinkedHashMap<>();
     private ImmutableMap.Builder<URL, EncryptionFilter> encryptionFilters = ImmutableMap.builder();
 
@@ -42,7 +43,7 @@ public final class OCFContainer implements GenericResourceProvider
       Preconditions.checkArgument(resource != null, "resource must not be null");
       try
       {
-        resources.put(rootURL.resolve(URLUtils.encodePath(resource.getPath())), resource);
+        resources.put(URLUtils.normalize(rootURL.resolve(URLUtils.encodePath(resource.getPath()))), resource);
       } catch (GalimatiasParseException e)
       {
         throw new IllegalArgumentException(
@@ -64,17 +65,24 @@ public final class OCFContainer implements GenericResourceProvider
           resource + " was not found in the container");
       encryptionFilters.put(resource, filter);
     }
+
+    public void setPackaged(boolean isPackaged)
+    {
+      this.isPackaged = isPackaged;
+    }
   }
 
   private final URL rootURL;
+  private final boolean isPackaged;
   private final ImmutableMap<URL, OCFResource> resources;
   private final ImmutableMap<URL, EncryptionFilter> encryptionFilters;
 
   public OCFContainer(Builder builder)
   {
     this.rootURL = builder.rootURL;
+    this.isPackaged = builder.isPackaged;
     this.resources = ImmutableMap.copyOf(builder.resources);
-    this.encryptionFilters = builder.encryptionFilters.build();
+    this.encryptionFilters = builder.encryptionFilters.buildKeepingLast();
   }
 
   public boolean contains(URL resource)
@@ -93,7 +101,7 @@ public final class OCFContainer implements GenericResourceProvider
   public InputStream openStream(URL url)
     throws IOException
   {
-    OCFResource resource = resources.get(url);
+    OCFResource resource = resources.get(URLUtils.normalize(url));
     if (resource == null)
     {
       throw new IllegalArgumentException("Resource not found: " + url);
@@ -127,11 +135,15 @@ public final class OCFContainer implements GenericResourceProvider
   {
     return rootURL.relativize(url);
   }
+  
+  public boolean isPackaged() {
+    return isPackaged;
+  }
 
   public boolean isRemote(URL url)
   {
     Preconditions.checkArgument(url != null, "URL is null");
-    if (contains(url))
+    if ("data".equals(url.scheme()) || contains(url))
     {
       return false;
     }

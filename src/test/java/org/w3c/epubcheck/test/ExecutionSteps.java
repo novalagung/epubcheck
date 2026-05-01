@@ -10,7 +10,7 @@ import java.net.URL;
 import java.util.Locale;
 
 import org.w3c.epubcheck.core.Checker;
-import org.w3c.epubcheck.test.TestConfiguration.CheckerMode;
+import org.w3c.epubcheck.test.EPUBCheckConfiguration.CheckerMode;
 import org.w3c.epubcheck.util.url.URLUtils;
 
 import com.adobe.epubcheck.api.EpubCheck;
@@ -21,7 +21,6 @@ import com.adobe.epubcheck.opf.ValidationContext;
 import com.adobe.epubcheck.opf.ValidationContext.ValidationContextBuilder;
 import com.adobe.epubcheck.ops.OPSChecker;
 import com.adobe.epubcheck.overlay.OverlayChecker;
-import com.adobe.epubcheck.util.Archive;
 import com.adobe.epubcheck.util.EPUBVersion;
 import com.adobe.epubcheck.util.FileResourceProvider;
 
@@ -30,35 +29,37 @@ import io.cucumber.java.en.When;
 public class ExecutionSteps
 {
 
-  private final TestConfiguration configuration;
+  private final TestEnvironment environment;
+  private final EPUBCheckConfiguration configuration;
 
-  public ExecutionSteps(TestConfiguration configuration)
+  public ExecutionSteps(TestEnvironment environment, EPUBCheckConfiguration configuration)
   {
+    this.environment = environment;
     this.configuration = configuration;
   }
 
-  @When("checking EPUB/file/document {string}")
+  @When("checking EPUB/file/document/directory/file\\ set {string}")
   public void check(String path)
   {
     Locale oldDefaultLocale = Locale.getDefault();
     try
     {
-      // Complete configuration and get the test file 
-      Locale.setDefault(configuration.getDefaultLocale());
+      // Complete configuration and get the test file
+      Locale.setDefault(environment.getDefaultLocale());
       if (configuration.getMode() == null)
       {
         configuration.setMode(CheckerMode.fromExtension(path));
       }
-      File testFile = getEPUBFile(configuration.getBasepath() + path);
-      
+      File testFile = getEPUBFile(environment.getBasepath() + path);
+
       // Initialize the report
       configuration.getReport().setEpubFileName(testFile.getAbsolutePath());
       configuration.getReport().initialize();
-      
+
       // Create the checker and run checks
       Checker checker = getChecker(testFile);
       checker.check();
-      
+
       // Finalize the report
       configuration.getReport().generate();
     } finally
@@ -101,17 +102,7 @@ public class ExecutionSteps
     {
       URL url = this.getClass().getResource(path);
       assertThat("Couldn’t find EPUB: " + path, url, is(notNullValue()));
-      File file = new File(url.toURI());
-      if (file.isDirectory())
-      {
-        Archive epub = new Archive(file.getPath());
-        epub.createArchive();
-        return epub.getEpubFile();
-      }
-      else
-      {
-        return file;
-      }
+      return new File(url.toURI());
     } catch (URISyntaxException e)
     {
       throw new IllegalStateException(e);
